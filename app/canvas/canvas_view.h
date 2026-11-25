@@ -71,6 +71,9 @@ public:
    */
   void onSettingsChanged(const AppearanceSettings& settings);
 
+signals:
+  void canvasChanged(const QPointF& center, const qreal scale);
+
 protected:
   /**
    * @brief Overrides the key press event to handle zoom and pan controls.

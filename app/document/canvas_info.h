@@ -16,7 +16,9 @@ public:
    * @brief Constructs a new CanvasSaveInfo object with default values.
    */
   CanvasSaveInfo();
+  CanvasSaveInfo(const QString& id, const QPointF& position, qreal scale);
 
+  QString id() const;
   /**
    * @brief Returns the current scale of the canvas.
    * @return The scale value.
@@ -28,6 +30,8 @@ public:
    * @return The center point as a QPointF.
    */
   QPointF center() const;
+
+  void setId(const QString& id);
 
   /**
    * @brief Sets the scale of the canvas.
@@ -71,6 +75,7 @@ public:
   friend QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info);
 
 private:
-  qreal mScale = {1.0};  /// The scale of the canvas.
+  QString mId;
+  qreal mScale = {1.0};      /// The scale of the canvas.
   QPointF mCenter = {0, 0};  /// The center point of the canvas.
 };

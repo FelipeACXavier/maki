@@ -144,6 +144,7 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
   {
     setCursor(Qt::ArrowCursor);
     mDoMousePanning = false;
+    emit canvasChanged(getCenter(), getScale());
   }
 
   QGraphicsView::mouseReleaseEvent(event);
@@ -185,6 +186,8 @@ void CanvasView::resetZoom()
   const double snapped = quantisedScale(DEFAULT_ZOOM);
   t.scale(snapped, snapped);
   setTransform(t);
+  update();
+  emit canvasChanged(getCenter(), getScale());
 }
 
 void CanvasView::zoom(float scaleFactor)
@@ -201,6 +204,7 @@ void CanvasView::zoom(float scaleFactor)
 
   scale(rel, rel);
   update();
+  emit canvasChanged(getCenter(), getScale());
 }
 
 qreal CanvasView::quantisedScale(qreal proposedScale) const

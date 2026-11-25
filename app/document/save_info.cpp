@@ -19,7 +19,9 @@ SaveInfo& SaveInfo::instance()
 
 void SaveInfo::reset()
 {
-  mCanvasInfo = CanvasSaveInfo();
+  CanvasSaveInfo mainCanvas;
+  mainCanvas.setId(Config::MAIN_CANVAS);
+  mCanvasInfo = {mainCanvas};
   mStructuralNodes.clear();
   mPipelines.clear();
   mMissionParameters.clear();
@@ -27,14 +29,33 @@ void SaveInfo::reset()
   // Do not destroy the scheduler
 }
 
-CanvasSaveInfo SaveInfo::canvasInfo() const
+QVector<CanvasSaveInfo> SaveInfo::canvasesInfo() const
 {
   return mCanvasInfo;
 }
 
+CanvasSaveInfo SaveInfo::canvasInfo(const QString& id) const
+{
+  auto canvas = maki::findIf(mCanvasInfo, [id](const auto& info) { return info.id() == id; });
+  if (canvas)
+    return *canvas;
+
+  return CanvasSaveInfo();
+}
+
 void SaveInfo::setCanvasInfo(const CanvasSaveInfo& info)
 {
-  mCanvasInfo = info;
+  // If it exists, we update it. Otherwise, just add it
+  for (auto& canvas : mCanvasInfo)
+  {
+    if (canvas.id() != info.id())
+      continue;
+
+    canvas = info;
+    return;
+  }
+
+  mCanvasInfo.push_back(info);
 }
 
 void SaveInfo::print() const
@@ -648,7 +669,10 @@ QJsonObject SaveInfo::toJson() const
 {
   QJsonObject data;
 
-  data[ConfigKeys::CANVAS] = canvasInfo().toJson();
+  QJsonArray canvasArray;
+  for (const auto& canvas : canvasesInfo())
+    canvasArray.append(canvas.toJson());
+  data[ConfigKeys::CANVAS] = canvasArray;
 
   QJsonArray structuralArray;
   for (const auto& node : getnodes())
@@ -666,8 +690,13 @@ SaveInfo SaveInfo::fromJson(const QJsonObject& data)
   auto canvasInfo = CanvasSaveInfo::fromJson(data[ConfigKeys::CANVAS].toObject());
   info.setCanvasInfo(canvasInfo);
 
+  for (const auto& canvas : data[ConfigKeys::CANVAS].toArray())
+    if (canvas.isObject())
+      info.setCanvasInfo(CanvasSaveInfo::fromJson(canvas.toObject()));
+
   for (const auto& node : data[ConfigKeys::STRUCTURAL].toArray())
-    info.addNode(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
+    if (node.isObject())
+      info.addNode(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
 
   return info;
 }

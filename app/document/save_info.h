@@ -33,12 +33,13 @@ public:
    */
   SaveInfo() = default;
 
+  QVector<CanvasSaveInfo> canvasesInfo() const;
   /**
    * @brief Get the canvas save info.
    *
    * @return CanvasSaveInfo The canvas save info.
    */
-  CanvasSaveInfo canvasInfo() const;
+  CanvasSaveInfo canvasInfo(const QString& id) const;
 
   /**
    * @brief Set the canvas save info.
@@ -221,7 +222,7 @@ public:
   QString saveFile;
 
 private:
-  CanvasSaveInfo mCanvasInfo;                          /// The canvas save info.
+  QVector<CanvasSaveInfo> mCanvasInfo;                 /// The canvas save info.
   QVector<std::shared_ptr<INode>> mStructuralNodes;    /// A vector of shared pointers to INode objects representing structural nodes.
   QVector<std::shared_ptr<FlowSaveInfo>> mPipelines;   /// A vector of shared pointers to IFlow objects representing the available pipelines.
   QVector<maki::MissionParameter> mMissionParameters;  /// A vector to the available mission parameters

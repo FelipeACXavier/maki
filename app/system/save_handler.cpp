@@ -299,7 +299,11 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
   manifest["version"] = project.version;
   manifest["projectSaveFile"] = project.saveFile;
 
-  manifest["canvas"] = project.canvasInfo().toJson();
+  QJsonArray canvases;
+  for (const auto& canvas : project.canvasesInfo())
+    canvases.append(canvas.toJson());
+
+  manifest["canvases"] = canvases;
 
   QJsonArray tasks;
   for (const auto& task : project.getnodes())
@@ -514,8 +518,6 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
     project.version = manifestJson.value("version").toString();
   if (manifestJson.contains("projectSaveFile"))
     project.saveFile = manifestJson.value("projectSaveFile").toString();
-  if (manifestJson.contains("canvas"))
-    project.setCanvasInfo(CanvasSaveInfo::fromJson(manifestJson.value("canvas").toObject()));
 
   const QJsonArray tasks = manifestJson["tasks"].toArray();
   for (const QJsonValue& value : tasks)
@@ -540,6 +542,28 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
     JSON contents;
     ASSIGN_OR_RETURN_ON_FAILURE_AS(contents, JSON::fromFile(absolutePath), SaveInfo);
     project.addPipeline(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(contents)));
+  }
+
+  // We can now load the canvas, but we need to make sure the flows exist
+  if (manifestJson.contains("canvases"))
+  {
+    for (const auto& canvas : manifestJson.value("canvases").toArray())
+    {
+      if (!canvas.isObject())
+      {
+        LOG_ERROR("Saved canvas is not an object, could not load it");
+        continue;
+      }
+
+      auto saved = CanvasSaveInfo::fromJson(canvas.toObject());
+      auto structural = saved.id() == Config::MAIN_CANVAS;
+      auto flowExists = project.getFlowWithId(saved.id());
+      auto pipelineExists = project.getPipelineWithId(saved.id());
+      if (structural || flowExists || pipelineExists)
+        project.setCanvasInfo(saved);
+      else
+        LOG_WARNING("Trying loading canvas that does not exist: {}", saved.id());
+    }
   }
 
   return project;

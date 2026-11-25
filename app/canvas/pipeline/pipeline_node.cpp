@@ -57,7 +57,19 @@ void PipelineNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* styl
     const QRectF r(rect.center().x() - diameter / 2.0, rect.center().y() - diameter / 2.0, diameter, diameter);
 
     painter->drawEllipse(r);
-    paintSvg(mIconRenderer, painter, rect.center(), diameter * 0.8, diameter * 0.8);
+
+    // Clip the SVG to the circle
+    painter->save();
+
+    QPainterPath clip;
+    clip.addEllipse(r);
+    painter->setClipPath(clip, Qt::IntersectClip);
+
+    // Scale the SVG independently
+    const qreal iconSize = diameter * 0.6;
+    paintSvg(mIconRenderer, painter, rect.center(), iconSize, iconSize);
+
+    painter->restore();
   }
 }
 
@@ -71,6 +83,7 @@ bool PipelineNode::ensureRenderer()
     else
       mIconRenderer->load(iconPathFromTheme(configuration->body.iconPath));
 
+    mIconRenderer->setAspectRatioMode(Qt::KeepAspectRatio);
     return true;
   }
 

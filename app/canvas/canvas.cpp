@@ -62,12 +62,37 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<EdgeRouter> router, QObj
 
   connect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
   mDocumentSubscription = SaveInfo::instance().subscribe([this](const DocumentEvent& event) { onDocumentChanged(event); });
+
+  auto canvasInfo = SaveInfo::instance().canvasInfo(canvasId);
+  if (canvasInfo.id() == canvasId)
+  {
+    LOG_TRACE("Canvas info found: {} -> ({}, {}) {}", canvasId, canvasInfo.center().x(), canvasInfo.center().y(), canvasInfo.scale());
+    parentView()->zoom(canvasInfo.scale() / parentView()->getScale());
+    parentView()->setScale(canvasInfo.scale());
+    parentView()->centerOn(canvasInfo.center());
+  }
+  else
+  {
+    LOG_TRACE("Canvas info not found, adding it: {} -> ({}, {}) {}", canvasId, canvasInfo.center().x(), canvasInfo.center().y(), canvasInfo.scale());
+    // Create this canvas in the document
+    canvasInfo.setId(canvasId);
+    canvasInfo.setCenter(parentView()->getCenter());
+    canvasInfo.setScale(parentView()->getScale());
+    SaveInfo::instance().setCanvasInfo(canvasInfo);
+  }
+
+  connect(parentView(), &CanvasView::canvasChanged, this, [canvasId](const QPointF& point, const qreal scale) {
+    LOG_TRACE("Saving canvas info: {} -> ({}, {}) {}", canvasId, point.x(), point.y(), scale);
+    SaveInfo::instance().setCanvasInfo(CanvasSaveInfo(canvasId, point, scale));
+  });
 }
 
 Canvas::~Canvas()
 {
   mDocumentSubscription.reset();
   disconnect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
+  if (auto* parent = parentView())
+    disconnect(parent, &CanvasView::canvasChanged, this, nullptr);
 }
 
 QString Canvas::id() const
@@ -294,7 +319,13 @@ void Canvas::dragMoveEvent(QGraphicsSceneDragDropEvent* event)
     const QPointF center = event->scenePos();
     const QRectF dragRect(center.x() - size.width() / 2.0, center.y() - size.height() / 2.0, size.width(), size.height());
     updateCapabilityDropPreview(dragRect);
+    if (config->libraryType != type())
+      parentView()->setCursor(Qt::ForbiddenCursor);
+    else
+      parentView()->setCursor(Qt::DragMoveCursor);
+
     event->acceptProposedAction();
+
     return;
   }
 
@@ -304,7 +335,10 @@ void Canvas::dragMoveEvent(QGraphicsSceneDragDropEvent* event)
 void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (!event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  {
+    event->ignore();
     return;
+  }
 
   // Make sure that no other nodes are selected before dropping
   clearSelectedNodes();
@@ -330,6 +364,13 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   const QSize size = config ? QSize{config->body.width, config->body.height} : QSize{100, 100};
   const QPointF center = event->scenePos();
   const QRectF dragRect(center.x() - size.width() / 2.0, center.y() - size.height() / 2.0, size.width(), size.height());
+  if (config->libraryType != type())
+  {
+    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Tried to drop a '{}' node on a '{}' canvas", Types::LibraryTypeToString(config->libraryType),
+                   Types::LibraryTypeToString(type()));
+    event->ignore();
+    return;
+  }
 
   NodeItem* parentNode = nullptr;
   QString subFlowId = Constants::MAIN_SUB_FLOW;
@@ -366,6 +407,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   if (parentNode && !parentNode->acceptDrops())
   {
     NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Tried to drop node on parent that does not accept drops");
+    event->ignore();
     return;
   }
 
@@ -1796,7 +1838,7 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   mUndoStack->clear();
 
   // Reset canvas
-  auto canvasInfo = info.canvasInfo();
+  auto canvasInfo = info.canvasInfo(id());
   parentView()->zoom(canvasInfo.scale() / parentView()->getScale());
   parentView()->setScale(canvasInfo.scale());
   parentView()->centerOn(canvasInfo.center());
