@@ -67,12 +67,9 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
 
     const auto rect = scaledRect();
     if (config()->type != ConfigKeys::TASK_NODE)
-    {
-      const QRectF r = rect.adjusted(2, 2, -2, -2);
-      painter->drawEllipse(r);
-    }
-    paintSvg(mRenderer, painter, nodeRect().center(), rect.width(), rect.height());
+      painter->drawEllipse(rect.adjusted(2, 2, -2, -2));
 
+    paintSvg(mRenderer, painter, nodeRect().center(), rect.width(), rect.height());
     NodeBase::paintLabel(painter, labelBoundingRect(), pen);
   }
 }

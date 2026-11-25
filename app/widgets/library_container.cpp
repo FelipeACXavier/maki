@@ -10,7 +10,7 @@
 #include "widgets/library_scene.h"
 #include "widgets/section.h"
 
-static constexpr int PADDING = 15;
+static constexpr int PADDING = 16;
 
 LibraryContainer::LibraryContainer(bool draggableItems, QWidget* parent)
     : QGraphicsView(parent)
@@ -141,6 +141,7 @@ void LibraryContainer::relayoutItems()
     }
   }
 
+  const auto halfPadding = PADDING / 2;
   for (int i = 0; i < items.size(); ++i)
   {
     const int column = i % columnCount;
@@ -148,7 +149,7 @@ void LibraryContainer::relayoutItems()
     const QRectF itemBounds = items[i]->boundingRect();
 
     const qreal x = column * columnWidth + columnWidth / 2.0 - itemBounds.center().x();
-    const qreal y = PADDING + row * (cellHeight + PADDING) - itemBounds.top();
+    const qreal y = halfPadding + row * (cellHeight + halfPadding) - itemBounds.top();
 
     items[i]->setPos(x, y);
   }

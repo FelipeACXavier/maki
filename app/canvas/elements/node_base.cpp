@@ -99,7 +99,7 @@ QRectF NodeBase::labelBoundingRect() const
   const auto textBounds = mLabelMetrics.boundingRect(QRectF(0, 0, availableWidth, maxHeight), Qt::TextWordWrap | Qt::TextWrapAnywhere, labelText());
   const qreal textHeight = qMin(textBounds.height() + Config::CONTENT_PADDING, maxHeight);
 
-  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom(), availableWidth, textHeight);
+  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom() + Config::CONTENT_PADDING, availableWidth, textHeight);
 }
 
 qreal NodeBase::maximumLabelHeight(const QFontMetricsF& metrics)

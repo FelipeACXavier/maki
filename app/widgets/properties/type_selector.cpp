@@ -123,6 +123,7 @@ void TypeSelector::setEditorTitle(const QString& title)
 void TypeSelector::populateTypes(const koda::types::QualifiedName* currentName)
 {
   mSelector->clear();
+  maki::addCompleter(maki::TypeRegistry::instance().allTypeNames(), mSelector);
 
   if (mUsesPrimitives)
   {
