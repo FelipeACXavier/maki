@@ -397,6 +397,7 @@ public:
   friend QDataStream& operator>>(QDataStream& in, NodeItem& config);
 
   virtual QRectF childAreaSceneRect(const QString& subflow = Constants::MAIN_SUB_FLOW) const;
+  virtual QPointF positionAnchor() const;
 
   /**
    * @brief Called to tell the parent that the position of this node was updated.

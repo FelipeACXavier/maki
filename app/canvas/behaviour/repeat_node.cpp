@@ -215,8 +215,6 @@ void RepeatNode::layoutSubFlow()
 
     if (auto parent = parentNode())
       parent->childPositionUpdated(this);
-
-    applySize(localRect.size());
   }
 
   layoutSubFlowMarkers();

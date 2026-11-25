@@ -457,7 +457,6 @@ void WithinNode::layoutSubFlows()
 
   const QRectF currentRect = sceneAlignRect();
 
-  applySize(currentRect.size());
   if (geometryChanged && currentRect != previousRect)
     geometryChanged(this, previousRect);
 

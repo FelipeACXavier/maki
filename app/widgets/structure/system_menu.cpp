@@ -169,7 +169,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, const QString& nodeId,
   if (!nodeInfo)
     return VoidResult::Failed("Could not find node: {}", nodeId);
 
-  LOG_DEBUG("Node added to system menu: {} ({}) - Flow: {}", nodeInfo->getid(), nodeInfo->getnodeId(), flowId);
+  LOG_TRACE("Node added to system menu: {} ({}) - Flow: {}", nodeInfo->getid(), nodeInfo->getnodeId(), flowId);
   const auto* exists = getItemById(nodeInfo->getid());
   if (exists)
     return VoidResult();
@@ -180,7 +180,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, const QString& nodeId,
     const auto parentId = nodeInfo->getparentId();
     if (parentId.isEmpty())
     {
-      LOG_DEBUG("{} is a root node", nodeInfo->getnodeId());
+      LOG_TRACE("{} is a root node", nodeInfo->getnodeId());
       auto result = addRootNode(nodeInfo);
       return result;
     }
@@ -202,7 +202,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, const QString& nodeId,
 
 VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeId, const QString& parentId)
 {
-  LOG_DEBUG("Node removed: {} ({})", nodeId, flowId);
+  LOG_TRACE("Node removed: {} ({})", nodeId, flowId);
   if (flowId == Config::MAIN_CANVAS)
   {
     auto* item = getItemById(nodeId);
@@ -273,7 +273,7 @@ VoidResult SystemMenu::onFlowAdded(const QString& flowId, const QString& nodeId)
   if (exists)
     return VoidResult();
 
-  LOG_INFO("Adding flow: {} ({}) to {}", flow->getname(), flow->getid(), nodeId);
+  LOG_TRACE("Adding flow: {} ({}) to {}", flow->getname(), flow->getid(), nodeId);
 
   auto parent = getOrCreateChildGroup(nodeId, Roles::Flows);
   if (!parent)
@@ -339,7 +339,7 @@ VoidResult SystemMenu::onPipelineAdded(const QString& pipelineId, const QString&
     return VoidResult();
   }
 
-  LOG_DEBUG("Pipeline added to system menu: {} - {}", pipelineId, pipelineName);
+  LOG_TRACE("Pipeline added to system menu: {} - {}", pipelineId, pipelineName);
 
   auto* pipelineRoot = getOrCreateGroup(PIPELINE_ROOT, Roles::PipelineRoot, nullptr);
   if (!pipelineRoot)
@@ -353,7 +353,7 @@ VoidResult SystemMenu::onPipelineAdded(const QString& pipelineId, const QString&
 
 VoidResult SystemMenu::onPipelineRemoved(const QString& pipelineId)
 {
-  LOG_DEBUG("Pipeline removed from system menu: {}", pipelineId);
+  LOG_TRACE("Pipeline removed from system menu: {}", pipelineId);
 
   auto pipelineRoot = getItemById(PIPELINE_ROOT);
   if (pipelineRoot == nullptr)
@@ -679,7 +679,6 @@ void SystemMenu::removeFlow(QTreeWidgetItem* item)
 QString SystemMenu::cleanId(const QTreeWidgetItem* item, const int id, const Qt::ItemDataRole role) const
 {
   auto data = item->data(id, role).toString();
-  LOG_DEBUG("Cleaning: {} -> {}", data, data.section("::", 0, 0));
   return data.section("::", 0, 0);
 }
 

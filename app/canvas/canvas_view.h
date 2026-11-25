@@ -56,6 +56,7 @@ public:
    * @param pos The position to center on.
    */
   void centerOn(const QPointF& pos);
+  void fitInView(const QRectF& rect, Qt::AspectRatioMode aspectRadioMode);
 
   /**
    * @brief Centers the view on a specific QGraphicsItem.

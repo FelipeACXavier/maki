@@ -50,7 +50,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   if (const auto* name = getProperty(ConfigKeys::NAME))
     setLabel(name->getvalue()->toStringValue(), labelSize);
 
-  updatePosition(initialPosition - nodeRect().center(), Config::NodeMove::Start);
+  updatePosition(initialPosition - positionAnchor(), Config::NodeMove::Start);
   LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}), scale {} and {} ports", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale(),
             config()->ports.size());
 }
@@ -608,6 +608,11 @@ QSizeF NodeItem::clampSize(qreal width, qreal height) const
   return QSizeF(clampedW, clampedH);
 }
 
+QPointF NodeItem::positionAnchor() const
+{
+  return NodeItem::nodeRect().center();
+}
+
 void NodeItem::fitInsideParent(qreal padding)
 {
   const auto* parent = parentNode();
@@ -811,7 +816,7 @@ QPointF NodeItem::constrainChildPosition(const NodeItem* child, const QPointF& p
 
 void NodeItem::updateExtrasPosition(Config::NodeMove reason)
 {
-  SaveInfo::instance().setPositionOfNode(id(), centerPosition());
+  SaveInfo::instance().setPositionOfNode(id(), pos() + positionAnchor());
 
   if (auto* parent = parentNode())
     parent->childPositionUpdated(this);

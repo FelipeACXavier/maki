@@ -46,12 +46,20 @@ QPointF CanvasView::getCenter() const
 
 void CanvasView::centerOn(const QGraphicsItem* item)
 {
-  QGraphicsView::centerOn(item);
+  if (item)
+    centerOn(item->sceneBoundingRect().center());
 }
 
 void CanvasView::centerOn(const QPointF& pos)
 {
   QGraphicsView::centerOn(pos);
+  emit canvasChanged(getCenter(), getScale());
+}
+
+void CanvasView::fitInView(const QRectF& rect, Qt::AspectRatioMode aspectRadioMode)
+{
+  QGraphicsView::fitInView(rect, aspectRadioMode);
+  emit canvasChanged(getCenter(), getScale());
 }
 
 void CanvasView::onSettingsChanged(const AppearanceSettings& settings)

@@ -729,8 +729,8 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
 
   // Determine whether this transition belongs to a subflow.
   const NodeItem* insertionParent = insertionParentForTransition(transition);
-  const auto srcCenter = source->mapRectToScene(source->boundingRect()).center();
-  const auto dstCenter = destination->mapRectToScene(destination->boundingRect()).center();
+  const auto srcCenter = source->sceneAlignRect().center();
+  const auto dstCenter = destination->sceneAlignRect().center();
   const QPointF insertCenter = QPointF(info.getposition().x(), (srcCenter.y() + dstCenter.y()) * 0.5);
 
   // The user dropped directly on the transition, so use that position.
