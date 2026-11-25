@@ -17,7 +17,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  explicit LibraryContainer(QWidget* parent = nullptr);
+  explicit LibraryContainer(bool draggableItems, QWidget* parent = nullptr);
 
   /**
    * @brief Creates and returns a new LibraryContainer instance with the specified name and parent widget.
@@ -26,7 +26,7 @@ public:
    * @param parent The parent widget.
    * @return A pointer to the newly created LibraryContainer instance.
    */
-  static LibraryContainer* create(const QString& name, QWidget* parent);
+  static LibraryContainer* create(const QString& name, bool draggableItems, QWidget* parent);
 
   /**
    * @brief Adds a node with the given ID and configuration to the library.
@@ -64,7 +64,8 @@ protected:
 
 private:
   int mLastItemY;  /// The last Y position of an item in the scene.
-  int mColumnCount = 2;
+  int mColumnCount;
+  bool mDraggableItems;
 
   /**
    * @brief Updates the size of the scene based on the current view size.

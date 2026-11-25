@@ -107,7 +107,7 @@ LibraryContainer* CapabilitySelector::getLibrary(const QString& id)
   if (existingLib)
     return *existingLib;
 
-  auto library = LibraryContainer::create(id, mContent);
+  auto library = LibraryContainer::create(id, false, mContent);
   library->setProperty(ConfigKeys::ID.toUtf8(), id);
   library->setColumnCount(4);
   library->setDraggable(false);

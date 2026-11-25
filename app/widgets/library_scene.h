@@ -83,6 +83,8 @@ protected:
    */
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
+  void dropEvent(QGraphicsSceneDragDropEvent* event) override;
+
 private:
   QPointF mPressScenePos;       /// Scene position where mouse was pressed.
   bool mSupportsDrags = true;   /// Flag indicating whether this scene accepts node dragging
@@ -94,4 +96,6 @@ private:
    * @brief Clears all selected nodes from the scene.
    */
   void clearSelectedNodes();
+
+  DraggableItem* draggableAt(const QPointF& pos) const;
 };

@@ -1,5 +1,6 @@
 #include "empty_slot.h"
 
+#include <QCursor>
 #include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
@@ -95,6 +96,7 @@ void EmptySlot::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidge
 
 void EmptySlot::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
+  setCursor(Qt::PointingHandCursor);
   mHovered = true;
   update();
   QGraphicsObject::hoverEnterEvent(event);
@@ -102,6 +104,7 @@ void EmptySlot::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 
 void EmptySlot::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
+  setCursor(Qt::OpenHandCursor);
   mHovered = false;
   mPressed = false;
   update();

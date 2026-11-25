@@ -14,9 +14,14 @@ public:
   ~CapabilityNode() override;
 
   QPainterPath shape() const override;
-  void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   void addParent(NodeItem* node, const QString& subflow) override;
+
+protected:
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
+
+  void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
   bool rendersAsInsetCapability() const;
 };

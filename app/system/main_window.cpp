@@ -944,7 +944,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   else
     return VoidResult::Failed("Unknown library type: {}", type);
 
-  LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
+  LibraryContainer* sidebarview = LibraryContainer::create(libraryName, true, toolbox);
   const auto* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
   connect(sidebarScene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType, const QString& /* instanceId */) {
     if (auto info = ConfigurationTable::instance().get(nodeType))
@@ -1232,17 +1232,6 @@ VoidResult MainWindow::onActionSave()
 {
   if (!mSaveHandler)
     return VoidResult::Failed("System not initialized");
-
-  if (CanvasView* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(Config::MAIN_CANVAS)))
-  {
-    if (auto* scene = qobject_cast<Canvas*>(view->scene()))
-    {
-      CanvasSaveInfo info;
-      info.setCenter(scene->getCenter());
-      info.setScale(scene->getScale());
-      SaveInfo::instance().setCanvasInfo(info);
-    }
-  }
 
   auto saved = mSaveHandler->saveProject(SaveInfo::instance());
   if (saved)

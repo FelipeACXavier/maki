@@ -6,7 +6,7 @@
 #include "canvas/elements/draggable.h"
 #include "logging.h"
 
-static const int MIN_DRAG_DISTANCE = 200;
+static const int MIN_DRAG_DISTANCE = 100;
 
 LibraryScene::LibraryScene(QObject* parent)
     : QGraphicsScene(parent)
@@ -15,30 +15,34 @@ LibraryScene::LibraryScene(QObject* parent)
   setBackgroundBrush(Qt::transparent);
 }
 
+DraggableItem* LibraryScene::draggableAt(const QPointF& pos) const
+{
+  QGraphicsItem* item = itemAt(pos, QTransform());
+  if (item)
+  {
+    if (item->type() == DraggableItem::Type)
+      return static_cast<DraggableItem*>(item);
+    else if (item->type() == QGraphicsSvgItem::Type && item->parentItem()->type() == DraggableItem::Type)
+      return static_cast<DraggableItem*>(item->parentItem());
+  }
+
+  return nullptr;
+}
+
 void LibraryScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
   if (event->button() == Qt::LeftButton)
   {
     clearSelectedNodes();
 
-    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+    auto* item = draggableAt(event->scenePos());
     if (item)
     {
-      if (item->type() == DraggableItem::Type)
-        mClickedItem = static_cast<DraggableItem*>(item);
-      else if (item->type() == QGraphicsSvgItem::Type)
-        mClickedItem = static_cast<DraggableItem*>(item->parentItem());
-
-      if (mClickedItem)
-      {
-        mDragging = false;
-        mPressScenePos = event->scenePos();
-
-        dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::OpenHandCursor);
-
-        event->accept();
-        return;
-      }
+      mClickedItem = item;
+      mDragging = false;
+      mPressScenePos = event->scenePos();
+      event->accept();
+      return;
     }
   }
 
@@ -47,8 +51,10 @@ void LibraryScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void LibraryScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-  if (!mClickedItem || !(event->buttons() & Qt::LeftButton) || !mSupportsDrags)
+  if (!mClickedItem || !(event->buttons() & Qt::LeftButton))
   {
+    mDragging = false;
+    mClickedItem = nullptr;
     QGraphicsScene::mouseMoveEvent(event);
     return;
   }
@@ -67,6 +73,7 @@ void LibraryScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     if (result == Qt::IgnoreAction)
     {
       LOG_DEBUG("Drag cancelled or drop rejected");
+      // dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
       emit dragCancelled(nodeType);
     }
   }
@@ -94,9 +101,18 @@ void LibraryScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   mDragging = false;
   mClickedItem = nullptr;
 
-  dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
-  dynamic_cast<QGraphicsView*>(parent())->update();
   event->accept();
+}
+
+void LibraryScene::dropEvent(QGraphicsSceneDragDropEvent* event)
+{
+  if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  {
+    event->ignore();
+    return;
+  }
+
+  QGraphicsScene::dropEvent(event);
 }
 
 void LibraryScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)

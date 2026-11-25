@@ -23,6 +23,20 @@ CapabilityNode::~CapabilityNode()
 {
 }
 
+void CapabilityNode::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+  NodeItem::hoverEnterEvent(event);
+  if (!flags().testFlag(QGraphicsItem::ItemIsMovable))
+    setCursor(Qt::PointingHandCursor);
+}
+
+void CapabilityNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+  NodeItem::hoverLeaveEvent(event);
+  if (!flags().testFlag(QGraphicsItem::ItemIsMovable))
+    setCursor(Qt::OpenHandCursor);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // paint / shape
 // ─────────────────────────────────────────────────────────────────────────────

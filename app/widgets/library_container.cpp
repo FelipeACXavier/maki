@@ -11,9 +11,11 @@
 
 static constexpr int PADDING = 15;
 
-LibraryContainer::LibraryContainer(QWidget* parent)
+LibraryContainer::LibraryContainer(bool draggableItems, QWidget* parent)
     : QGraphicsView(parent)
     , mLastItemY(0)
+    , mColumnCount(2)
+    , mDraggableItems(draggableItems)
 {
   // We don't want to scroll our inner container, only the outer widget should be scrollable
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -22,9 +24,9 @@ LibraryContainer::LibraryContainer(QWidget* parent)
   viewport()->setFocusPolicy(Qt::StrongFocus);
 }
 
-LibraryContainer* LibraryContainer::create(const QString& name, QWidget* parent)
+LibraryContainer* LibraryContainer::create(const QString& name, bool draggableItems, QWidget* parent)
 {
-  auto container = new LibraryContainer();
+  auto container = new LibraryContainer(draggableItems);
 
   // Not sure why, but setting a small width makes sure that the nodes are centered
   LibraryScene* scene = new LibraryScene(container);
@@ -63,7 +65,7 @@ void LibraryContainer::updateSceneSize()
 
 VoidResult LibraryContainer::addNode(const QString& nodeId, std::shared_ptr<NodeConfig> config, const QString& instanceId)
 {
-  auto* item = new DraggableItem(instanceId, nodeId, config);
+  auto* item = new DraggableItem(instanceId, nodeId, config, mDraggableItems);
 
   // Add item to scene
   scene()->addItem(item);

@@ -12,7 +12,6 @@
 
 #include "config.h"
 #include "node_base.h"
-#include "types.h"
 
 /**
  * @brief A draggable item in a graphical scene.
@@ -32,7 +31,7 @@ public:
    * @param config The configuration settings for this item.
    * @param parent The parent QGraphicsItem.
    */
-  DraggableItem(const QString& instanceId, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
+  DraggableItem(const QString& instanceId, const QString& nodeId, std::shared_ptr<NodeConfig> config, bool draggable, QGraphicsItem* parent = nullptr);
 
   /**
    * @brief Destroys the DraggableItem.
@@ -67,6 +66,7 @@ public:
    */
   void handleClick(QGraphicsSceneMouseEvent* event);
 
+protected:
   /**
    * @brief Returns the shape of this item for collision detection.
    *
@@ -89,4 +89,10 @@ public:
    * @return The QRectF representing the bounding rectangle of this item.
    */
   QRectF nodeRect() const override;
+
+  void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+
+private:
+  bool mDraggable;
 };

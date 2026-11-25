@@ -683,8 +683,6 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   if (mIsResizing)
   {
     mIsResizing = false;
-    dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::ArrowCursor);
-
     if (auto canvas = qobject_cast<Canvas*>(scene()))
       canvas->undoStack()->push(new ResizeNodeCommand(canvas, id(), mResizeStartSize, mSize));
   }
@@ -714,6 +712,7 @@ void NodeItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 
 void NodeItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
+  setCursor(Qt::OpenHandCursor);
   mHovered = true;
   NodeBase::hoverEnterEvent(event);
   if (nodeHovered)
@@ -722,6 +721,7 @@ void NodeItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 
 void NodeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
+  setCursor(Qt::ArrowCursor);
   mHovered = false;
   NodeBase::hoverLeaveEvent(event);
   if (nodeHovered)
