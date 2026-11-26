@@ -50,16 +50,17 @@ The example below mounts the repository and a local ROS 2 workspace, and uses X1
 ```bash
 docker run -it --rm \
   --name maki \
-  --user "$(id -u):$(id -g)" \
+  --user "1000:1000" \
   --net=host \
-  -e "DISPLAY=${DISPLAY:-:0}" \
-  -e QT_X11_NO_MITSHM=1 \
+  -e QT_QPA_PLATFORM=wayland \
+  -e WAYLAND_DISPLAY="$WAYLAND_DISPLAY" \
+  -e XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
   --device /dev/dri \
-  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-  -v "$PWD:/home/$(id -un)/maki:rw" \
-  -v "$HOME/ros2_ws:/home/$(id -un)/ros2_ws:rw" \
+  -v "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" \
+  -v "$PWD:/home/ubuntu/maki:rw" \
+  -v "$HOME/ros2_ws:/home/ubuntu/ros2_ws:rw" \
   maki:v1.0.0
-```
+  ```
 
 Adjust the ROS workspace mount to match your machine, or omit it if not needed. The image must have a corresponding user and home directory for this mount layout. X11 access controls, GPU permissions, and Wayland/XWayland setups may require host-specific adjustments.
 
