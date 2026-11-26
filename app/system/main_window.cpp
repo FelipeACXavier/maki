@@ -183,9 +183,15 @@ VoidResult MainWindow::start()
     onSettingsChanged();
 
     LOG_WARN_ON_FAILURE(loadElements());
-    LOG_WARN_ON_FAILURE(loadLastSession());
+    auto loadedLastSession = VoidResult::Failed("Not restoring");
+    if (mSettingsManager && mSettingsManager->general().restoreLastSession)
+    {
+      loadedLastSession = loadLastSession();
+      LOG_WARN_ON_FAILURE(loadedLastSession);
+    }
 
-    if (!DEFAULT_TEMPLATE.isEmpty())
+    // If we managed to restore the last session, then we don't need to load the template
+    if (!loadedLastSession && !DEFAULT_TEMPLATE.isEmpty())
       onActionNew(DEFAULT_TEMPLATE);
 
     startFirstTour(true);
@@ -1281,6 +1287,8 @@ void MainWindow::onActionLoad(const QString& filename, bool fromTemplate)
     return;
   }
 
+  LOG_INFO("Loading project: {}", filename);
+
   // Clear the previous types and parameters
   maki::TypeRegistry::instance().removeUserTypes();
   auto loaded = mSaveHandler->loadProject(filename);
@@ -1584,9 +1592,6 @@ void MainWindow::showAboutDialog()
 
 VoidResult MainWindow::loadLastSession()
 {
-  if (!mSettingsManager || !mSettingsManager->general().restoreLastSession)
-    return VoidResult();
-
   if (mSettingsManager->general().recentFiles.empty())
     return VoidResult::Failed("No file to load");
 

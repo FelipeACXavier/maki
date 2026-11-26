@@ -43,12 +43,11 @@ struct PipelineEvent
   QString name;
 };
 
-struct ParentEvent
+struct BatchEvent
 {
-};
-
-struct ChildEvent
-{
+  QString canvasId;
+  QStringList createdNodes;
+  QStringList createdTransitions;
 };
 
 struct DocumentEvent
@@ -73,10 +72,11 @@ struct DocumentEvent
     PipelineModified,
     DocumentReplaced,
     DocumentReset,
+    BatchCreationDone
   };
 
   Type type;
-  std::variant<NodeEvent, FlowEvent, TransitionEvent, ParentEvent, ChildEvent, PipelineEvent> data;
+  std::variant<NodeEvent, FlowEvent, TransitionEvent, PipelineEvent, BatchEvent> data;
 };
 
 namespace maki

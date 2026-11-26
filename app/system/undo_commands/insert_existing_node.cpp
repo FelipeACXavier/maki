@@ -32,7 +32,7 @@ void InsertExistingNodeCommand::redo()
 
   mCanvas->requestRemoveTransition(mOriginalTransition);
 
-  node->setCenterPosition(mNewCenter);
+  node->updatePosition(mNewCenter, Config::NodeMove::Relayout);
 
   mCanvas->requestCreateTransition(mIncomingTransition);
   mCanvas->requestCreateTransition(mOutgoingTransition);
@@ -51,5 +51,5 @@ void InsertExistingNodeCommand::undo()
 
   auto* node = mCanvas->findNodeWithId(mNodeId);
   if (node)
-    node->setCenterPosition(mOldCenter);
+    node->updatePosition(mOldCenter, Config::NodeMove::Relayout);
 }

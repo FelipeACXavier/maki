@@ -1,6 +1,7 @@
 #include "repeat_node.h"
 
 #include <QPainter>
+#include <QScopedValueRollback>
 
 #include "canvas/behaviour/sub_flow.h"
 #include "document/property_info.h"
@@ -32,7 +33,7 @@ RepeatNode::RepeatNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, co
 VoidResult RepeatNode::start()
 {
   RETURN_ON_FAILURE(NodeItem::start());
-  toggleCollapsed(mSubFlow, false);
+  toggleCollapsed(mSubFlow, false, false);
   return VoidResult();
 }
 
@@ -219,7 +220,7 @@ void RepeatNode::layoutSubFlow()
 
   layoutSubFlowMarkers();
 
-  if (geometryChanged && changed)
+  if (!mTogglingCollapsed && geometryChanged && changed)
     geometryChanged(this, previousRect);
 }
 
@@ -271,35 +272,41 @@ void RepeatNode::layoutSubFlowMarkers()
   }
 }
 
-void RepeatNode::toggleCollapsed(SubFlow* flow, bool collapsed)
+void RepeatNode::toggleCollapsed(SubFlow* flow, bool collapsed, bool preserveCenter)
 {
-  if (!flow)
+  if (!flow || flow->isCollapsed() == collapsed)
     return;
 
-  if (flow->isCollapsed() == collapsed)
-    return;
+  const QRectF previousRect = sceneAlignRect();
 
-  const auto previousRect = sceneAlignRect();
+  {
+    QScopedValueRollback guard(mTogglingCollapsed, true);
 
-  prepareGeometryChange();
-  flow->setCollapsed(collapsed);
+    prepareGeometryChange();
+    flow->setCollapsed(collapsed);
 
-  for (auto* port : mPorts)
-    if (port)
-      port->setMarker(!collapsed);
+    for (auto* port : mPorts)
+      if (port)
+        port->setMarker(!collapsed);
 
-  // If collapsed, then they should not be visible
-  for (auto& child : children())
-    if (child)
-      child->setVisible(!collapsed);
+    for (auto* child : children())
+      if (child)
+        child->setVisible(!collapsed);
 
-  layoutSubFlow();
+    layoutSubFlow();
+
+    if (preserveCenter)
+    {
+      const QPointF delta = previousRect.center() - sceneAlignRect().center();
+
+      if (!delta.isNull())
+        updatePosition(pos() + delta, Config::NodeMove::Relayout);
+    }
+  }
 
   if (subflowCollapsed)
     subflowCollapsed(this, flow->id(), collapsed);
 
-  // The layout does not trigger when toggling since the rect never really changes
-  // So we should trigger it here
   if (geometryChanged)
     geometryChanged(this, previousRect);
 }
@@ -325,7 +332,7 @@ void RepeatNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     return;
   }
 
-  toggleCollapsed(flow, !flow->isCollapsed());
+  toggleCollapsed(flow, !flow->isCollapsed(), true);
 
   event->accept();
   return;

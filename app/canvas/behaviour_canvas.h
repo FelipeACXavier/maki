@@ -91,7 +91,7 @@ public:
 
   void onNodeGeometryChanged(NodeItem* node, const QRectF& oldRect) override;
 
-  void ensureMinimumSpacing(const QString& nodeId) override;
+  void ensureMinimumSpacing(const QString& nodeId, bool reroute = true) override;
 
 protected:
   PFlow mFlow;
@@ -113,12 +113,13 @@ private:
    * @brief A pointer to the Flow object associated with this canvas.
    */
   const QString mOwner;
+  bool mResolvingSpacing = false;
 
   TransitionSaveInfo makeTransitionInfo(const QString& sourceId, const QString& destinationId, const QString& event, const QString& label) const;
 
   QList<NodeItem*> getNeighboursOf(const NodeItem* node, int depth = -1) const;
   NodeItem* insertionParentForTransition(const TransitionItem* transition) const;
   QPointF transitionPortAnchor(NodeItem* node, Types::Port port, const QPointF& fallback) const;
-  void pushDownstreamNodes(NodeItem* source, qreal deltaX);
+  void pushConnectedNodes(NodeItem* source, qreal deltaX);
   bool sameLayoutScope(const NodeItem* lhs, const NodeItem* rhs) const;
 };

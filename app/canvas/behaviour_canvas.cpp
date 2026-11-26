@@ -1,6 +1,7 @@
 #include "behaviour_canvas.h"
 
 #include <QMenu>
+#include <QScopedValueRollback>
 #include <QUndoStack>
 
 #include "canvas_view.h"
@@ -378,21 +379,15 @@ QList<NodeItem*> BehaviourCanvas::getNeighboursOf(const NodeItem* node, int dept
 
 void BehaviourCanvas::onNodeGeometryChanged(NodeItem* node, const QRectF& oldRect)
 {
-  if (!node)
+  if (!node || !mFlow)
     return;
 
-  // Calculate how far the node moved (we know that nodes only expand to the right and bottom)
   const QRectF currentRect = node->sceneAlignRect();
-  const qreal oldRight = oldRect.right();
-  const qreal newRight = currentRect.right();
-  const qreal deltaX = newRight - oldRight;
+  if (currentRect != oldRect)
+    ensureMinimumSpacing(node->id(), true);
 
-  // LOG_INFO("Geometry change: oldRight={} newRight={} delta={}", oldRight, newRight, deltaX);
-  if (!qFuzzyIsNull(deltaX))
-    ensureMinimumSpacing(node->id());
-
-  for (TransitionItem* transition : mFlow->transitions())
-    if (transition->source()->id() == node->id() || transition->destination()->id() == node->id())
+  for (auto* transition : mFlow->transitions())
+    if (transition->source() == node || transition->destination() == node)
       transition->updatePath();
 }
 
@@ -400,6 +395,8 @@ void BehaviourCanvas::onNodeMoved(NodeItem* node, bool done)
 {
   if (!node || !mFlow)
     return;
+
+  ensureMinimumSpacing(node->id(), false);
 
   QList<TransitionItem*> transitions;
   for (auto* transition : mFlow->transitions())
@@ -435,10 +432,12 @@ bool BehaviourCanvas::sameLayoutScope(const NodeItem* lhs, const NodeItem* rhs) 
   return lhs->parentNode() == rhs->parentNode() && lhs->parentSubFlow() == rhs->parentSubFlow();
 }
 
-void BehaviourCanvas::pushDownstreamNodes(NodeItem* source, qreal deltaX)
+void BehaviourCanvas::pushConnectedNodes(NodeItem* source, qreal deltaX)
 {
-  if (!source || qFuzzyIsNull(deltaX))
+  if (!source || !mFlow || qFuzzyIsNull(deltaX))
     return;
+
+  const bool downstream = deltaX > 0;
 
   QSet<NodeItem*> visited;
   QList<NodeItem*> pending;
@@ -455,96 +454,78 @@ void BehaviourCanvas::pushDownstreamNodes(NodeItem* source, qreal deltaX)
       if (!transition)
         continue;
 
-      if (transition->source() != current)
+      NodeItem* neighbour = nullptr;
+
+      if (downstream && transition->source() == current)
+        neighbour = transition->destination();
+      else if (!downstream && transition->destination() == current)
+        neighbour = transition->source();
+
+      if (!neighbour || visited.contains(neighbour))
         continue;
 
-      auto* destination = transition->destination();
-
-      if (!destination)
+      if (!sameLayoutScope(source, neighbour))
         continue;
 
-      if (visited.contains(destination))
-        continue;
-
-      if (destination == source)
-        continue;
-
-      if (isDescendantOf(source, destination))
-        continue;
-
-      // Check scope BEFORE inserting it into visited.
-      if (!sameLayoutScope(source, destination))
-        continue;
-
-      visited.insert(destination);
-      pending.append(destination);
+      visited.insert(neighbour);
+      pending.append(neighbour);
     }
   }
 
   visited.remove(source);
 
   for (auto* node : visited)
-  {
-    if (!node)
-      continue;
-
     node->updatePosition(node->pos() + QPointF(deltaX, 0), Config::NodeMove::Relayout);
-  }
 }
 
-void BehaviourCanvas::ensureMinimumSpacing(const QString& nodeId)
+void BehaviourCanvas::ensureMinimumSpacing(const QString& nodeId, bool reroute)
 {
-  auto node = findNodeWithId(nodeId);
+  if (mResolvingSpacing)
+    return;
+
+  auto* node = findNodeWithId(nodeId);
   if (!node)
     return;
 
+  QScopedValueRollback guard(mResolvingSpacing, true);
+
   const auto neighbours = getNeighboursOf(node, 1);
   const QRectF nodeRect = node->sceneAlignRect();
+
+  qreal pushLeft = 0.0;
+  qreal pushRight = 0.0;
 
   for (auto* neighbour : neighbours)
   {
     if (!neighbour || neighbour == node)
       continue;
 
-    const QRectF neighbourRect = neighbour->sceneAlignRect();
+    const QRectF rect = neighbour->sceneAlignRect();
 
-    // ----------------------------------------------------------------------
-    // Neighbour is on the right.
-    // ----------------------------------------------------------------------
-    if (neighbourRect.center().x() >= nodeRect.center().x())
+    // Ignore nodes that do not overlap vertically.
+    if (rect.bottom() <= nodeRect.top() || rect.top() >= nodeRect.bottom())
+      continue;
+
+    if (rect.center().x() >= nodeRect.center().x())
     {
-      const qreal currentGap = neighbourRect.left() - nodeRect.right();
-
-      if (currentGap >= MIN_NODE_SPACING)
-        continue;
-
-      const qreal deltaX = MIN_NODE_SPACING - currentGap;
-      pushDownstreamNodes(node, deltaX);
+      const qreal gap = rect.left() - nodeRect.right();
+      pushRight = qMax(pushRight, MIN_NODE_SPACING - gap);
     }
-    // ----------------------------------------------------------------------
-    // Neighbour is on the left.
-    // ----------------------------------------------------------------------
     else
     {
-      const qreal currentGap = nodeRect.left() - neighbourRect.right();
-
-      if (currentGap >= MIN_NODE_SPACING)
-        continue;
-
-      const qreal deltaX = MIN_NODE_SPACING - currentGap;
-
-      // For now I'd move only the left neighbour.
-      //
-      // If you want to preserve everything before it too, we can implement
-      // pushUpstreamNodes() exactly like pushDownstreamNodes().
-      neighbour->updatePosition(neighbour->pos() - QPointF(deltaX, 0), Config::NodeMove::Relayout);
+      const qreal gap = nodeRect.left() - rect.right();
+      pushLeft = qMax(pushLeft, MIN_NODE_SPACING - gap);
     }
   }
 
-  // alignNodeGroup(neighbours, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER);
-  // const auto groups = groupNodesByParent(neighbours);
-  // for (auto group : groups)
-  //   distributeNodeGroupHorizontally(group);
+  if (pushLeft > 0.0)
+    pushConnectedNodes(node, -pushLeft);
+
+  if (pushRight > 0.0)
+    pushConnectedNodes(node, pushRight);
+
+  if (reroute && (pushLeft > 0.0 || pushRight > 0.0))
+    autoRoute();
 }
 
 void BehaviourCanvas::createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items)
@@ -654,8 +635,6 @@ NodeItem* BehaviourCanvas::insertionParentForTransition(const TransitionItem* tr
   auto* destinationParent = destination->parentNode();
 
   const bool destinationIsSubFlowExit = info.dstPort() == Types::Port::OUT || info.dstPort() == Types::Port::ERROR || info.dstPort() == Types::Port::ABORT;
-  LOG_DEBUG("Transition parent: {} {} {} {}, port types: {}, {}", source->nodeId(), destination->nodeId(), sourceParent != nullptr,
-            destinationParent != nullptr, (int)info.srcPort(), (int)info.dstPort());
   // --------------------------------------------------------------------------
   // Empty subflow pass-through:
   //
@@ -729,9 +708,9 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
 
   // Determine whether this transition belongs to a subflow.
   const NodeItem* insertionParent = insertionParentForTransition(transition);
-  const auto srcCenter = source->sceneAlignRect().center();
-  const auto dstCenter = destination->sceneAlignRect().center();
-  const QPointF insertCenter = QPointF(info.getposition().x(), (srcCenter.y() + dstCenter.y()) * 0.5);
+  const QPointF srcPoint = transitionPortAnchor(source, originalTransition.srcPort(), originalTransition.srcPoint());
+  const QPointF dstPoint = transitionPortAnchor(destination, originalTransition.dstPort(), originalTransition.dstPoint());
+  const QPointF insertCenter = QPointF(info.getposition().x(), (srcPoint.y() + dstPoint.y()) * 0.5);
 
   // The user dropped directly on the transition, so use that position.
   const QString insertedNodeId = QUuid::createUuid().toString();
@@ -751,9 +730,6 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
     info.setParentId("");
     info.setParentSubFlow(Constants::MAIN_SUB_FLOW);
   }
-
-  const QPointF srcPoint = transitionPortAnchor(source, originalTransition.srcPort(), originalTransition.srcPoint());
-  const QPointF dstPoint = transitionPortAnchor(destination, originalTransition.dstPort(), originalTransition.dstPoint());
 
   // ==========================================================================
   // Original source -> inserted node
@@ -841,16 +817,15 @@ bool BehaviourCanvas::insertNodeOnTransition(TransitionItem* transition, NodeIte
 
   const TransitionSaveInfo originalTransition = transition->saveInfo();
   const NodeItem* insertionParent = insertionParentForTransition(transition);
-  const QPointF originalNodeCenter = node->centerPosition();
 
-  // The node is already being dragged over the transition, so retaining its
-  // current X and placing it at the transition's vertical position works well.
-  const QPointF pathCenter = transition->path().isEmpty() ? (originalTransition.srcPoint() + originalTransition.dstPoint()) / 2.0
-                                                          : transition->path().pointAtPercent(0.5);
-
-  const QPointF insertCenter{originalNodeCenter.x(), pathCenter.y()};
   const QPointF srcPoint = transitionPortAnchor(source, originalTransition.srcPort(), originalTransition.srcPoint());
   const QPointF dstPoint = transitionPortAnchor(destination, originalTransition.dstPort(), originalTransition.dstPoint());
+
+  const QPointF oldPosition = node->pos();
+  const QPointF alignmentCenter = node->sceneAlignRect().center();
+
+  const QPointF insertCenter(alignmentCenter.x(), (srcPoint.y() + dstPoint.y()) * 0.5);
+  const QPointF newPosition = oldPosition + insertCenter - alignmentCenter;
 
   // ==========================================================================
   // Original source -> inserted node
@@ -907,9 +882,8 @@ bool BehaviourCanvas::insertNodeOnTransition(TransitionItem* transition, NodeIte
   const QString newParentId = insertionParent ? insertionParent->id() : QString{};
   const QString oldSubflow = insertionParent ? insertionParent->parentSubFlow() : Constants::MAIN_SUB_FLOW;
 
-  LOG_DEBUG("Inserting node: {} ({}) in transition between: {} {}", node->nodeId(), oldSubflow, source->nodeId(), destination->nodeId());
-  mUndoStack->push(new InsertExistingNodeCommand(this, node->id(), originalNodeCenter, insertCenter, oldParentId, newParentId, originalTransition, incoming,
-                                                 outgoing, oldSubflow));
+  mUndoStack->push(
+    new InsertExistingNodeCommand(this, node->id(), oldPosition, newPosition, oldParentId, newParentId, originalTransition, incoming, outgoing, oldSubflow));
 
   return true;
 }

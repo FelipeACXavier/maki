@@ -46,7 +46,14 @@ void InsertNodeCommand::redo()
 
   mCanvas->requestCreateTransition(mIncomingTransition);
   mCanvas->requestCreateTransition(mOutgoingTransition);
-
-  mCanvas->ensureMinimumSpacing(mNode.getid());
+  SaveInfo::instance().publish(DocumentEvent{
+    .type = DocumentEvent::Type::BatchCreationDone,
+    .data =
+      BatchEvent{
+        .canvasId = mCanvas->id(),
+        .createdNodes = {mNode.getid()},
+        .createdTransitions = {mIncomingTransition.getid(), mOutgoingTransition.getid()},
+      },
+  });
   LOG_TRACE("Redo InsertNodeCommand");
 }

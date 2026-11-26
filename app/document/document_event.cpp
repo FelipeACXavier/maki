@@ -42,6 +42,8 @@ QString toString(const DocumentEvent::Type type)
       return "DocumentReplaced";
     case DocumentEvent::Type::DocumentReset:
       return "DocumentReset";
+    case DocumentEvent::Type::BatchCreationDone:
+      return "BatchCreationDone";
   }
 
   return "Unknown";

@@ -54,10 +54,16 @@ if(MAKI_BUILD_TESTS)
   enable_testing()
   include(FetchContent)
 
+  set(GTEST_FETCH_OPTIONS)
+
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+    list(APPEND GTEST_FETCH_OPTIONS DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  endif()
+
   FetchContent_Declare(
     googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
+    ${GTEST_FETCH_OPTIONS}
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 

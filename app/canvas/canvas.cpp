@@ -276,6 +276,20 @@ void Canvas::onDocumentChanged(const DocumentEvent& event)
     case DocumentEvent::Type::TransitionModified:
     {
     }
+    case DocumentEvent::Type::BatchCreationDone:
+    {
+      const auto* data = std::get_if<BatchEvent>(&event.data);
+      if (!data)
+        return;
+
+      if (data->canvasId != id())
+        return;
+
+      for (const auto& nodeId : data->createdNodes)
+        ensureMinimumSpacing(nodeId, false);
+
+      autoRoute();
+    }
     default:
       break;
   }
@@ -574,7 +588,7 @@ TransitionConfig Canvas::nextTransition(NodeItem* /* node */) const
   return TransitionConfig{};
 }
 
-void Canvas::ensureMinimumSpacing(const QString& /* nodeId */)
+void Canvas::ensureMinimumSpacing(const QString& /* nodeId */, bool /* reroute */)
 {
 }
 
@@ -2071,6 +2085,8 @@ NodeItem* Canvas::materializeNode(const std::shared_ptr<NodeSaveInfo>& modelInfo
   }
 
   node->start();
+  const auto delta = modelInfo->getposition() - node->sceneAlignRect().center();
+  node->updatePosition(node->pos() + delta, Config::NodeMove::Relayout);
   nodeStarted(node);
 
   // No automatic selection here.

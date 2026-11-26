@@ -191,7 +191,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, const QString& nodeId,
 
   auto parent = getItemById(flowId);
   if (parent == nullptr)
-    return VoidResult::Failed("Could not add node: {}. Could not find parent flow", nodeInfo->getid());
+    return VoidResult::Failed("Could not add node: {}. Could not find parent flow: {}", nodeInfo->getid(), flowId);
 
   QTreeWidgetItem* newNode = new QTreeWidgetItem(parent);
   populateItem(newNode, QIcon(":/icons/flow_block.svg"), nodeInfo->getNodeName(), nodeInfo->getnodeId(), nodeInfo->getid(),

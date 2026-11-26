@@ -290,7 +290,7 @@ public:
 
   void selectAll();
 
-  virtual void ensureMinimumSpacing(const QString& nodeId);
+  virtual void ensureMinimumSpacing(const QString& nodeId, bool reroute = true);
 signals:
   /**
    * @brief Emitted when a node is selected.

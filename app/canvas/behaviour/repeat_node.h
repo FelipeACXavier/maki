@@ -38,10 +38,11 @@ protected:
   void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
+  SubFlow* mSubFlow{nullptr};
+  bool mTogglingCollapsed = false;
+
   void layoutSubFlow();
   void layoutSubFlowMarkers();
 
-  SubFlow* mSubFlow{nullptr};
-
-  void toggleCollapsed(SubFlow* flow, bool collapsed);
+  void toggleCollapsed(SubFlow* flow, bool collapsed, bool preserveCenter);
 };
