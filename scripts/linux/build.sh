@@ -188,6 +188,7 @@ if [ $DOCKER -eq 1 ]; then
   fi
 
   
+  export QT_QPA_PLATFORM=offscreen
   # We need to explictly set the compiler when building in the docker container
   EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13"
 fi
